@@ -81,7 +81,7 @@ double *mtimes_gpu(double *a, double *b, int m, int n, int k){
     cudaThreadSynchronize();
 
     end = clock();
-    printf("Matrix multiplication in gpu (initial) took: %f secs\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+    printf("Matrix multiplication in gpu (initial) took: %f\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
 
     cudaMemcpy(c, g_c, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
 	cudaFree(g_a);
@@ -137,7 +137,7 @@ double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k){
 	}
 
 
-	printf("Matrix Multiplication with CuBLAS Library took: %f seconds\n", tot / CLOCKS_PER_SEC);
+	printf("Matrix Multiplication with CuBLAS Library took: %f\n", tot / CLOCKS_PER_SEC);
 
 	free(temp);
 	cudaFree(g_rv);
@@ -174,7 +174,7 @@ double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k){
     cudaThreadSynchronize();
 
     end = clock();
-    printf("Matrix multiplication in gpu with CuBLAS gemm took: %f seconds\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+    printf("Matrix multiplication in gpu with CuBLAS gemm took: %f\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
 
     cublasGetMatrix(m, k, sizeof(double), g_c, m, c, m);
 
@@ -247,7 +247,7 @@ double *mtimes_gpu_coalescing(double *a, double *b, int m, int n, int k){
     cudaThreadSynchronize();
 
     end = clock();
-    printf("Matrix multiplication in gpu with global coalescing took: %f seconds\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+    printf("Matrix multiplication in gpu with global coalescing took: %f\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
 
     cudaMemcpy(c, g_c, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
     cudaFree(g_a);
@@ -317,7 +317,7 @@ double *mtimes_gpu_no_bank_conflicts(double *a, double *b, int m, int n, int k){
     cudaThreadSynchronize();
 
     end = clock();
-    printf("Matrix multiplication in gpu with no bank conflicts took: %f seconds\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+    printf("Matrix multiplication in gpu with no bank conflicts took: %f\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
 
     cudaMemcpy(c, g_c, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
     cudaFree(g_a);
