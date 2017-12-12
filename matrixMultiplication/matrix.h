@@ -14,5 +14,6 @@ double *mtimes_cpu(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k);
-double *mtimes_gpu_opt(double *a, double *b, int m, int n, int k);
+double *mtimes_gpu_coalescing(double *a, double *b, int m, int n, int k);
+double *mtimes_gpu_no_bank_conflicts(double *a, double *b, int m, int n, int k);
 

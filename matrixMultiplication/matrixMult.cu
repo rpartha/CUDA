@@ -7,6 +7,9 @@
 
 #define THREADS_PER_BLK 16 //aka block size
 
+#define AS(i, j) As[i][j]
+#define BS(i, j) Bs[i][j]
+
 __global__ void mtimes(double *g_a, double *g_b, double *g_c, int m, int n, int k){ 
     int r = blockIdx.y * blockDim.y + threadIdx.y; 
     int c = blockIdx.x * blockDim.x + threadIdx.x;
@@ -20,42 +23,38 @@ __global__ void mtimes(double *g_a, double *g_b, double *g_c, int m, int n, int 
 } 
 
 /* square matrices using tiling*/
-__global__ void mtimes_sq(double *gs_a, double *gs_b, double *gs_c, int m, int n, int k){
-	__shared__ double s_a[THREADS_PER_BLK][THREADS_PER_BLK];
-	__shared__ double s_b[THREADS_PER_BLK][THREADS_PER_BLK];
+__global__ void mtimes_gpu_sq(double *gs_a, double *gs_b, double *gs_c, int n){
+    __shared__ double tile_a[THREADS_PER_BLK][THREADS_PER_BLK];
+    __shared__ double tile_b[THREADS_PER_BLK][THREADS_PER_BLK];
 
-	unsigned int r = THREADS_PER_BLK * blockIdx.y + threadIdx.y;
-    unsigned int c = THREADS_PER_BLK * blockIdx.x + threadIdx.x;
-    
-	unsigned int i, j;
+    int r = blockIdx.y * THREADS_PER_BLK + threadIdx.y;
+    int c = blockIdx.x * THREADS_PER_BLK + threadIdx.x;
+    double result = 0.0;
+    int idx;
 
-	double x = 0.0;
-	for (i = 0; i < (THREADS_PER_BLK + n - 1) / THREADS_PER_BLK; i++){
-		if ((i * THREADS_PER_BLK + threadIdx.x < n) && (r < m))
-		{
-			s_a[threadIdx.y][threadIdx.x] = gs_a[(r * n) + (i * THREADS_PER_BLK) + threadIdx.x];
-		} 
-		else 
-		{
-			s_a[threadIdx.y][threadIdx.x] = 0.0;
-		}
+    for (int sub = 0; sub < gridDim.x; ++sub){
+        idx = r * n + sub * THREADS_PER_BLK + threadIdx.x;
+        if(idx >= n*n){
+            tile_a[threadIdx.y][threadIdx.x] = 0;
+        }else{
+            tile_a[threadIdx.y][threadIdx.x] = gs_a[idx];
+        }
 
-		if ((i * THREADS_PER_BLK + threadIdx.y < n) && (c < k)){
-			s_b[threadIdx.y][threadIdx.x] = gs_b[c + k * (i * THREADS_PER_BLK + threadIdx.y)];
-		}
-		else{
-			s_b[threadIdx.y][threadIdx.x] = 0.0;
-		}
-		__syncthreads();
+        idx = (sub * THREADS_PER_BLK + threadIdx.y) * n + c;
+        if(idx >= n*n){
+            tile_b[threadIdx.y][threadIdx.x] = 0;
+        } else{
+            tile_b[threadIdx.y][threadIdx.x] = gs_b[idx];
+        }
+        __syncthreads(); //acts as a barrier
 
-		for (j = 0; j < THREADS_PER_BLK; j++){
-			x += s_a[threadIdx.y][j] * s_b[j][threadIdx.x];
-		}
-		__syncthreads();
-	}
-
-	if ((r < m) && (c < k)){
-		gs_c[(blockIdx.y * blockDim.y + threadIdx.y) * k + (blockIdx.x * blockDim.x) + threadIdx.x] = x;
+        for (int k = 0; k < THREADS_PER_BLK; ++k) {
+            result += tile_a[threadIdx.y][k] * tile_b[k][threadIdx.x];
+        }
+        __syncthreads(); //acts as a barrier
+    }
+    if(r < n && c < n){
+        gs_c[r * n + c] = result;
     }
 }
 
@@ -77,7 +76,7 @@ double *mtimes_gpu(double *a, double *b, int m, int n, int k){
     clock_t beg, end;
     beg = clock();
 
-    mtimes_sq<<<dimGrid, dimBlock>>>(g_a, g_b, g_c, m, n, k);    
+    mtimes_gpu_sq<<<dimGrid, dimBlock>>>(g_a, g_b, g_c, n);      
 
     cudaThreadSynchronize();
 
@@ -103,8 +102,8 @@ double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k){
 	cudaMalloc((void**)&g_cv, n * sizeof(double));
 	cudaMalloc((void**)&g_c, sizeof(double));
 
-	cublasHandle_t handle;
-	cublasCreate(&handle);
+	cublasHandle_t hndl;
+	cublasCreate(&hndl);
 
 	int i, j, h;
 	double *rv = (double *) malloc(n * sizeof(double));
@@ -126,7 +125,7 @@ double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k){
 
 			beg = clock();
 
-			cublasDdot(handle, n, g_rv, 1, g_cv, 1, temp);
+			cublasDdot(hndl, n, g_rv, 1, g_cv, 1, temp);
 			cudaThreadSynchronize();
 
 			end = clock();
@@ -143,7 +142,7 @@ double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k){
 	free(temp);
 	cudaFree(g_rv);
 	cudaFree(g_cv);
-	cublasDestroy(handle);
+	cublasDestroy(hndl);
 
     return c; 
     
@@ -158,8 +157,8 @@ double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k){
     cudaMalloc((void**)&g_b, sizeof(double) * n * k); 
     cudaMalloc((void**)&g_c, sizeof(double) * m * k); 
 
-    cublasHandle_t handle;
-    cublasCreate(&handle);
+    cublasHandle_t hndl;
+    cublasCreate(&hndl);
 
     cublasSetMatrix(m, n, sizeof(double), a, m, g_a, m);
 	cublasSetMatrix(n, k, sizeof(double), b, n, g_b, n);
@@ -171,7 +170,7 @@ double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k){
     clock_t beg, end;
     beg = clock();
     
-    cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, k, n, &alpha, g_a, m, g_b, n, &beta, g_c, m);
+    cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, m, k, n, &alpha, g_a, m, g_b, n, &beta, g_c, m); /* double precision */
     cudaThreadSynchronize();
 
     end = clock();
@@ -182,8 +181,149 @@ double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k){
     cudaFree(g_a);
 	cudaFree(g_b);
 	cudaFree(g_c);
-	cublasDestroy(handle);
+	cublasDestroy(hndl);
 
+    return c;
+}
+
+__global__ void mtimes_gpu_coa(double *a, double *b, double *c, int m, int n, int k){
+     
+   int bx = blockIdx.x;
+   int by = blockIdx.y;
+
+   int tx = threadIdx.x;
+   int ty = threadIdx.y;
+
+   __shared__ double As[THREADS_PER_BLK][THREADS_PER_BLK];
+
+   __shared__ double Bs[THREADS_PER_BLK][THREADS_PER_BLK];
+
+   int a0 = n * THREADS_PER_BLK * by;
+   int aEnd   = a0 + n - 1;
+   int a_incr  = THREADS_PER_BLK;
+   int b0 = THREADS_PER_BLK * bx;
+   int b_incr  = THREADS_PER_BLK * k;
+
+   float c_sub = 0;
+
+   for (int i = a0, j = b0; i <= aEnd; i += a_incr, j += b_incr) {
+       AS(ty,tx) = a[i + n * ty + tx];
+       BS(tx,ty) = b[j + k * ty + tx];
+
+       __syncthreads();
+
+  
+       for (int k = 0; k < THREADS_PER_BLK; ++k){
+            c_sub += AS(ty,k) * BS(tx,k);
+       }
+           
+       __syncthreads();
+   }
+
+    int q = k * THREADS_PER_BLK * by + THREADS_PER_BLK * bx;
+    c[q + k * ty + tx] = c_sub;
+}
+
+double *mtimes_gpu_coalescing(double *a, double *b, int m, int n, int k){
+
+    double *g_a, *g_b, *g_c;
+    double *c = (double *) malloc(m * k * sizeof(double));
+
+    cudaMalloc((void**)&g_a, sizeof(double) * m * n); 
+    cudaMalloc((void**)&g_b, sizeof(double) * n * k); 
+    cudaMalloc((void**)&g_c, sizeof(double) * m * k); 
+
+    cudaMemcpy(g_a, a, m * n * sizeof(double), cudaMemcpyHostToDevice);
+	cudaMemcpy(g_b, b, n * k * sizeof(double), cudaMemcpyHostToDevice);
+
+    dim3 threads(THREADS_PER_BLK, THREADS_PER_BLK);
+    dim3 grid(k / threads.x, m / threads.y);
+
+    clock_t beg, end;
+    beg = clock();
+
+    mtimes_gpu_coa<<< grid, threads >>>(g_a, g_b, g_c, m, n, k);
+
+    cudaThreadSynchronize();
+
+    end = clock();
+    printf("Matrix multiplication in gpu with global coalescing took: %f seconds\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+
+    cudaMemcpy(c, g_c, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
+    cudaFree(g_a);
+	cudaFree(g_b);
+    cudaFree(g_c);
+    
+    return c;
+}
+
+__global__ void mtimes_gpu_nbc(double *a, double *b, double *c, int m, int n, int k){
+    
+  int bx = blockIdx.x;
+  int by = blockIdx.y;
+
+  int tx = threadIdx.x;
+  int ty = threadIdx.y;
+
+  __shared__ double As[THREADS_PER_BLK][THREADS_PER_BLK];
+
+  __shared__ double Bs[THREADS_PER_BLK][THREADS_PER_BLK];
+
+  int a0 = n * THREADS_PER_BLK * by;
+  int aEnd   = a0 + n - 1;
+  int a_incr  = THREADS_PER_BLK;
+  int b0 = THREADS_PER_BLK * bx;
+  int b_incr  = THREADS_PER_BLK * k;
+
+  float c_sub = 0;
+
+  for (int i = a0, j = b0; i <= aEnd; i += a_incr, j += b_incr) {
+      AS(ty,tx) = a[i + n * ty + tx];
+      BS(ty,tx) = b[j + k * ty + tx];
+
+      __syncthreads();
+
+ 
+      for (int k = 0; k < THREADS_PER_BLK; ++k){
+           c_sub += AS(ty,k) * BS(k,tx);
+      }
+          
+      __syncthreads();
+    }
+
+   int q = k * THREADS_PER_BLK * by + THREADS_PER_BLK * bx;
+   c[q + k * ty + tx] = c_sub;
+}
+
+double *mtimes_gpu_no_bank_conflicts(double *a, double *b, int m, int n, int k){
+    double *g_a, *g_b, *g_c;
+    double *c = (double *) malloc(m * k * sizeof(double));
+
+    cudaMalloc((void**)&g_a, sizeof(double) * m * n); 
+    cudaMalloc((void**)&g_b, sizeof(double) * n * k); 
+    cudaMalloc((void**)&g_c, sizeof(double) * m * k); 
+
+    cudaMemcpy(g_a, a, m * n * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(g_b, b, n * k * sizeof(double), cudaMemcpyHostToDevice);
+
+    dim3 threads(THREADS_PER_BLK, THREADS_PER_BLK);
+    dim3 grid(k / threads.x, m / threads.y);
+
+    clock_t beg, end;
+    beg = clock();
+
+    mtimes_gpu_nbc<<< grid, threads >>>(g_a, g_b, g_c, m, n, k);
+
+    cudaThreadSynchronize();
+
+    end = clock();
+    printf("Matrix multiplication in gpu with no bank conflicts took: %f seconds\n", ((double)end - (double)beg) / CLOCKS_PER_SEC);
+
+    cudaMemcpy(c, g_c, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
+    cudaFree(g_a);
+    cudaFree(g_b);
+    cudaFree(g_c);
+    
     return c;
 }
 
