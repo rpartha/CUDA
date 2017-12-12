@@ -35,10 +35,10 @@ double compareMatrices(double *a, double *b, int m, int n, int k){
 double *mtimes_cpu(double *a, double *b, int m, int n, int k){
 	double *c = (double *) calloc(m*k, sizeof(double));
 
-	for (i = 0; i < m; i++) {
-        for (j = 0; j < k; j++) {
-            for (h = 0; h < n; h++) {
-                c[(m * i) + j] += a[(n * i) + h] * b[(k * h) + j];
+	for (int i = 0; i < m; i++) {
+        for	 (int j = 0; j < k; j++) {
+            for (int h = 0; h < n; h++) {
+                c[(m * i) + j] += a[(i * n) + h] * b[(h * k) + j];
             }
         }            
 	}
@@ -55,16 +55,17 @@ int main(int argc, char *argv[]){
 	double *b = generateMatrix(n, k);
 
 	double *c_cpu = mtimes_cpu(a, b, m, n, k);
-
-	if(m == n && n == k){ // square matrices only
-		double *c_gpu_sq = mtimes_gpu_sq(a, b, m, n, k); 
-	} 
-
-	else{
-		double *c_gpu = mtimes_gpu(a, b, m, n, k);
-	}
-
+	double *c_gpu = mtimes_gpu(a, b, m, n, k);	
 	double *cc_gpu = mtimes_gpu_cublas(a, b, m, n, k);
 	double *ccg_gpu = mtimes_gpu_cublas_func(a, b, m, n, k);
-	double *c_gpu_opt = mtimes_gpu_opt(a, b, m, n, k);
+	//double *c_gpu_opt = mtimes_gpu_opt(a, b, m, n, k);
+	
+	double res1 = compareMatrices(c_cpu, c_gpu, m, n, k);
+	printf("GPU MSE: %f\n", res1);
+
+	double res2 = compareMatrices(c_cpu, cc_gpu, m, n, k);
+	printf("GPU CuBLAS MSE: %f\n", res2);
+
+	double res3 = compareMatrices(c_cpu, ccg_gpu, m, n, k);
+	printf("GPU CuBLAS gemm MSE: %f\n", res3);
 }

@@ -12,7 +12,6 @@ void printMatrix(double *mat, int m, int n); /* display matrix */
 /* matrix multiplication cpu and gpu functions */
 double *mtimes_cpu(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu(double *a, double *b, int m, int n, int k);
-double *mtimes_gpu_sq(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu_cublas(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu_cublas_func(double *a, double *b, int m, int n, int k);
 double *mtimes_gpu_opt(double *a, double *b, int m, int n, int k);
