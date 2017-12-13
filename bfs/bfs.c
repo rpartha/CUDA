@@ -492,12 +492,13 @@ void bfsi(Vertex*** graph, int size, Node curr, Node** head, int** indexer) {
     }
 
 int main(int argc, char** argv){
-    if(argc != 3){
-        printf("Usage: ./bfs <file name> <size>\n");
+    if(argc != 4){
+        printf("Usage: ./bfs <file name> <size> <option>\n");
         exit(1);
     } else{
         char* fname = argv[1];
         int size = atoi(argv[2]);
+        int option = atoi(argv[3]);
 
         Node* head = NULL;
         clock_t start, stop;
@@ -519,42 +520,84 @@ int main(int argc, char** argv){
         }
          
          int* cbuf = bbuf;
-    
-         start = clock();
-         bfsr(&x, size, startNode, &head, &cbuf);
-         stop = clock();
-         float total = (float)((stop-start)/(float)CLOCKS_PER_SEC);
-    
-        printf("\n");
-    
-        for(int i; i < size*size; ++i){
-            if(bbuf[i] == -1){
-                break;
-            }
-            if(i % 10 != 9){
-                printf("%d, ", bbuf[i]);
-            } 
-            else{
-                printf("%d\n", bbuf[i]);
-            }
-        }
 
-        printf("\n");
-    
-        display(x, size);
-     
-        if(done){
-            writeGraphTo(x, fname, size); 
-            printf("lollolololol\n");
+         if(option == 1){
+            start = clock();
+            bfsr(&x, size, startNode, &head, &cbuf);
+            stop = clock();
+            float total = (float)((stop-start)/(float)CLOCKS_PER_SEC);
+       
+            printf("\n");
+       
+           for(int i; i < size*size; ++i){
+               if(bbuf[i] == -1){
+                   break;
+               }
+               if(i % 10 != 9){
+                   printf("%d, ", bbuf[i]);
+               } 
+               else{
+                   printf("%d\n", bbuf[i]);
+               }
+           }
+   
+           printf("\n");
+       
+           display(x, size);
+        
+           if(done){
+               writeGraphTo(x, fname, size); 
+               printf("lollolololol\n");
+           }
+       
+           freeGraph(x, size);
+           freeLL(head);
+            
+           printf("\n");
+       
+           printf("BFS on CPU Recursivley took: %f\n", total);
+           return 0;
+        } 
+
+        else if(option == 2){
+            start = clock();
+            bfsi(&x, size, startNode, &head, &cbuf);
+            stop = clock();
+            float total = (float)((stop-start)/(float)CLOCKS_PER_SEC);
+       
+            printf("\n");
+       
+           for(int i; i < size*size; ++i){
+               if(bbuf[i] == -1){
+                   break;
+               }
+               if(i % 10 != 9){
+                   printf("%d, ", bbuf[i]);
+               } 
+               else{
+                   printf("%d\n", bbuf[i]);
+               }
+           }
+   
+           printf("\n");
+       
+           display(x, size);
+        
+           if(done){
+               writeGraphTo(x, fname, size); 
+               printf("lollolololol\n");
+           }
+       
+           freeGraph(x, size);
+           freeLL(head);
+            
+           printf("\n");
+       
+           printf("BFS on CPU Iteratively took: %f\n", total);
+           return 0;
         }
-    
-        freeGraph(x, size);
-        freeLL(head);
-         
-        printf("\n");
-    
-        printf("BFS on CPU took: %f\n", total);
     
         return 0;
+        
     }
 }
