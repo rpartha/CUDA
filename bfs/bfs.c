@@ -45,7 +45,7 @@ Node pop(Node** head){
 	Node* temp = *head; 
 
 	if(*head == NULL){ 
-		printf("Nothing to pop!\n");
+		printf("Queue is empty!\n");
 		Node node;
 		node.data = -1;
 		node.pos = NULL;
@@ -77,9 +77,8 @@ Node pop(Node** head){
 	}
 }
 
-Vertex** build(Vertex** g, int size){ 
-    Vertex** graph;
-    graph = g;
+Vertex** build(Vertex** v, int size){ 
+    Vertex** graph = v;
 
     for(int i = 0; i < size; ++i){
         for(int j = 0; j < size; ++j){
@@ -90,15 +89,20 @@ Vertex** build(Vertex** g, int size){
                         graph[i][j+1].data = rand() % 100; 
                         graph[i+1][j+1].data = rand() % 100; 
                     }
-                } else if(j == size - 1){ 
+                } 
+                
+                else if(j == size - 1){ 
                     if(graph[i+1][j].data == -1 && graph[i][j-1].data == -1 && graph[i+1][j-1].data == -1){
                         graph[i+1][j].data = rand() % 100; 
                         graph[i][j-1].data = rand() % 100; 
                         graph[i+1][j-1].data = rand() % 100; 
                     }
-                } else{ 
+                } 
+                
+                else{ 
                     if(graph[i][j-1].data == -1 && graph[i][j+1].data == -1 &&
-                        graph[i+1][j-1].data == -1 && graph[i+1][j].data == -1 && graph[i+1][j+1].data == -1){
+                       graph[i+1][j-1].data == -1 && graph[i+1][j].data == -1 && 
+                       graph[i+1][j+1].data == -1){
 
                         graph[i][j-1].data = rand() % 100; 
                         graph[i][j+1].data = rand() % 100; 
@@ -115,16 +119,20 @@ Vertex** build(Vertex** g, int size){
                         graph[i][j+1].data = rand() % 100; 
                         graph[i-1][j+1].data = rand() % 100; 
                     }
-                } else if(j == size - 1){ 
+                } 
+                
+                else if(j == size - 1){ 
                     if(graph[i-1][j].data == -1 && graph[i][j-1].data == -1 && graph[i-1][j-1].data == -1){
                         graph[i-1][j].data = rand() % 100; 
                         graph[i][j-1].data = rand() % 100; 
                         graph[i-1][j-1].data = rand() % 100; 
                     }
-                } else{ 
+                } 
+                
+                else{ 
                     if(graph[i][j-1].data == -1 && graph[i][j+1].data == -1 &&
-                        graph[i-1][j-1].data == -1 && graph[i-1][j].data == -1 && 
-                        graph[i-1][j+1].data == -1){
+                       graph[i-1][j-1].data == -1 && graph[i-1][j].data == -1 && 
+                       graph[i-1][j+1].data == -1){
 
                         graph[i][j-1].data = rand() % 100; 
                         graph[i][j+1].data = rand() % 100; 
@@ -134,11 +142,13 @@ Vertex** build(Vertex** g, int size){
 
                     }
                 }
-            } else{
+            } 
+            
+            else{
                 if(j == 0){ 
                     if(graph[i-1][j].data == -1 && graph[i-1][j+1].data == -1 && 
-                        graph[i][j+1].data == -1 && graph[i+1][j].data == -1 && 
-                        graph[i+1][j+1].data == -1){
+                       graph[i][j+1].data == -1 && graph[i+1][j].data == -1 && 
+                       graph[i+1][j+1].data == -1){
 
                         graph[i-1][j].data = rand() % 100;
                         graph[i-1][j+1].data = rand() % 100;
@@ -149,7 +159,9 @@ Vertex** build(Vertex** g, int size){
                         graph[i+1][j+1].data = rand() % 100;
                     }
 
-                } else if(j == size - 1){ 
+                } 
+                
+                else if(j == size - 1){ 
                     if(graph[i-1][j-1].data == -1 && graph[i-1][j].data == -1 &&
                         graph[i][j-1].data == -1 && graph[i+1][j-1].data == -1 && 
                         graph[i+1][j].data == -1){
@@ -163,7 +175,9 @@ Vertex** build(Vertex** g, int size){
                         graph[i+1][j].data = rand() % 100;
                     }
 
-                } else{ 
+                } 
+                
+                else{ 
                     if(graph[i-1][j-1].data == -1 && graph[i-1][j].data == -1 && 
                         graph[i-1][j+1].data == -1 && graph[i][j-1].data == -1 && 
                         graph[i][j+1].data == -1 && graph[i+1][j-1].data == -1 && 
@@ -188,7 +202,7 @@ Vertex** build(Vertex** g, int size){
     return graph;
 }
 
-void printg(Vertex** graph, int size){
+void display(Vertex** graph, int size){
     for(int i = 0;i < size; ++i){
         for(int j = 0; j < size; ++j){
             if(graph[i][j].data != -1){
@@ -504,10 +518,10 @@ int main(int argc, char** argv){
              bbuf[i] = -1;
         }
          
-         int* cbuff = bbuf;
+         int* cbuf = bbuf;
     
          start = clock();
-         bfsr(&x, size, startNode, &head, &cbuff);
+         bfsr(&x, size, startNode, &head, &cbuf);
          stop = clock();
          float total = (float)((stop-start)/(float)CLOCKS_PER_SEC);
     
@@ -527,17 +541,19 @@ int main(int argc, char** argv){
 
         printf("\n");
     
-        printg(x, size);
+        display(x, size);
      
-        if(done) writeGraphTo(x, fname, size); 
-         
+        if(done){
+            writeGraphTo(x, fname, size); 
+            printf("lollolololol\n");
+        }
     
         freeGraph(x, size);
         freeLL(head);
          
         printf("\n");
     
-        printf("time taken: %f\n", total);
+        printf("BFS on CPU took: %f\n", total);
     
         return 0;
     }
