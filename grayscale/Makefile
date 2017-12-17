@@ -1,20 +1,19 @@
-CC = g++
+CP = g++
+CC = gcc
 NVCC = nvcc
-FREEIMG_FLAG = -lfreeimage
 
-all: grayscale grayscaleopt
+all: grayscale_seq grayscale_opt
 
-grayscale : 
-	$(NVCC) $(FREEIMG_FLAG) rgb2grayscale.cu -o grayscale
+grayscale_seq : grayscale_seq.c 
+	$(CC) -o grayscale_seq grayscale_seq.c lodepng.c
 
-grayscaleopt : 
-	$(CC) -c lodepng.cpp
-	$(NVCC) -c rgb2grayscaleopt.cu 
-	$(NVCC) -o grayscaleopt rgb2grayscaleopt.o lodepng.o
+grayscale_opt : 
+	$(CP) -c lodepng.cpp
+	$(NVCC) -c grayscale_opt.cu 
+	$(NVCC) -o grayscale_opt grayscale_opt.o lodepng.o
 
 clean:
 	rm *.o
-	rm grayscale
-	rm grayscaleopt
+	rm grayscale_seq
+	rm grayscale_opt
 	rm out.png
-	rm out.jpg
