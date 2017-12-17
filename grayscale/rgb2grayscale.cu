@@ -1,8 +1,9 @@
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <FreeImage.h>
 #include <iostream>
 #include <cmath>
-#include <FreeImage.h>
 
 using namespace std;
 
@@ -50,7 +51,10 @@ int main(int argc, char* argv[]){
         cudaMalloc((void **) &deviceOutput, sizeof(float)*m*n);
     
         FREE_IMAGE_TYPE freeImageType = FreeImage_GetImageType(fibmap);
+
         int k = 0;
+
+        /* initialize pixels to RGB */
         if(freeImageType == FIT_BITMAP) {
             BYTE* bits = (BYTE*)FreeImage_GetBits(fibmap);
             for(int i = 0; i < m; i++) {
@@ -95,7 +99,8 @@ int main(int argc, char* argv[]){
         cudaFree(deviceInput);
         cudaDeviceSynchronize();
     
-        BYTE* bits = (BYTE*)FreeImage_GetBits(fibmap);
+        BYTE* bits = (BYTE*)FreeImage_GetBits(fibmap); /* get bits after performing operations */
+
         k = 0;
         if(freeImageType == FIT_BITMAP) {
             for(int i = 0; i < m; i++) {
