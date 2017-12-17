@@ -1,8 +1,10 @@
 RGB to Grayscale Conversion using CUDA
 
-This code makes use of the FreeImage Library, which can be installed using the following links:
-https://launchpad.net/ubuntu/+source/freeimage (apt-get installation)
-http://freeimage.sourceforge.net/download.html (manual installation)
+This code makes use of the LodePNG Library, which can be downloaded using the following links:
+http://lodev.org/lodepng/
 
-Instructions on how to use can be found here:
-http://graphics.stanford.edu/courses/cs148-10-summer/docs/UsingFreeImage.pdf
+The set up is pretty simple:
+
+1) Include the header file and cpp file in your project
+2) Rename .cpp file to .c file if necessary
+3) Link library to project files when compiling (see Makefile)
