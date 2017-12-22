@@ -13,7 +13,7 @@ void rgb2gray_cpu(char* fname_in, char* fname_out){
     unsigned width;
     unsigned height;
 
-    unsigned err = lodepng_decode32_file(&img_in, &width, &height, fname_in);
+    unsigned err = lodepng_decode32_file(&img_in, &width, &height, fname_in); // decode 32-bit raw RGBA input image
 
     if(err){
         printf("error %u: %s\n", err, lodepng_error_text(err));
@@ -27,7 +27,7 @@ void rgb2gray_cpu(char* fname_in, char* fname_out){
             int psum = 0;
             int avg = 0;
             for(int k = 0; k < CHANNELS; k++){
-                psum = psum + img_in[4*width*i + 4*j + k];
+                psum += img_in[4*width*i + 4*j + k];
                 avg = psum/3;
                 for(int l = 0; l < CHANNELS; l++){
                     img_out[4*width*i + 4*j + l] = avg;
@@ -37,7 +37,7 @@ void rgb2gray_cpu(char* fname_in, char* fname_out){
         }
     }
 
-    lodepng_encode32_file(fname_out, img_out, width, height);
+    lodepng_encode32_file(fname_out, img_out, width, height); //encode 32-bit raw output image
 
     free(img_in);
     free(img_out);
